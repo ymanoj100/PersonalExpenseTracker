@@ -9,12 +9,11 @@ and adds them to expenses dictionary
 '''
 # ExpensesList tracks all the expenses in a list with each entry as a dictionary
 expensesList = []
-beforeSaveExpensesList = []
+#beforeSaveExpensesList = []
 fileOpened = False
-saveFile = True
+saveFile = None
 columns = ['Date', 'Category', 'Amount', 'Description']
 file_name = 'expenses.csv'
-
 root = Tk()
 root.title('Expenses Tracker')
 
@@ -38,12 +37,14 @@ def loadExpensesFromcsv():
                 expenseCategory = row.get('Category')
                 expenseAmount = float(row.get('Amount'))
                 expenseDescription = row.get('Description')
+                isSaved = 0
                 expensesList.append(row)
         print(f"Exited loadExpenses() {len(expensesList)}")
 
 loadExpensesFromcsv()
 
 def addExpense():
+    global saveFile
     print('Please enter your expenses below\n')
     expenseDate = input('Enter the date of the expense in the format YYYY-MM-DD: ')
     expenseCategory = input('Enter the category of the expense: ')
@@ -53,10 +54,12 @@ def addExpense():
         'Date': expenseDate,
         'Category': expenseCategory,
         'Amount': expenseAmount,
-        'Description': expenseDescription
+        'Description': expenseDescription,
+        'isSaved': 0 #to track if an expense needs to be saved to file when saveExpenses menu option is clicked
     }
-    beforeSaveExpensesList.append(expenseDict)
-    print(len(beforeSaveExpensesList))
+    #beforeSaveExpensesList.append(expenseDict)
+    #print(len(beforeSaveExpensesList))
+    expensesList.append(expenseDict)
     saveFile = True
 
 '''
@@ -98,20 +101,18 @@ def trackBudget():
 
 # Fetch all expenses and add them up
 def __calculateTotalExpensesForMonth():
+    global saveFile
     totalExpenses = 0.00
     print("In calculate " + str(totalExpenses))
     for expense in expensesList:
         if not expense['Amount']:
             continue;
         totalExpenses += float(expense['Amount'])
-    for beforeSaveExpense in beforeSaveExpensesList:
-        if not beforeSaveExpense['Amount']:
-            continue;
-        print(str(beforeSaveExpense['Amount']))
-        totalExpenses += float(beforeSaveExpense['Amount'])
+    print(str(totalExpenses))
     return totalExpenses
 
 def saveExpenses():
+    global saveFile
     # 1. Check if file exists BEFORE opening
     file_exists = os.path.isfile(file_name)
 
@@ -126,24 +127,37 @@ def saveExpenses():
             print("Header written (New file created).")
 
         # 4. Write the data
-        for expense in beforeSaveExpensesList:
+        for expense in expensesList:
             expenseDate = expense.get('Date')
             expenseCategory = expense.get('Category')
             expenseAmount = expense.get('Amount')
             expenseDesciption = expense.get('Description')
-            print(f'details: {expenseDate} {expenseCategory} {expenseAmount} {expenseDesciption}')
-            expenseDict = {'Date': expenseDate, 'Category': expenseCategory, 'Amount': expenseAmount, 'Description': expenseDesciption}
-            writer.writerow(expenseDict)
-            expensesList.append(expenseDict)
+            isSaved = expense.get('isSaved')
+            print(f'details: {expenseDate} {expenseCategory} {expenseAmount} {expenseDesciption} {isSaved}')
+            if isSaved is None:
+                continue
+            if isSaved == 1:
+                print("Is Saved in if is " + str(isSaved))
+                continue
+            else:
+                print("Is Saved in else is " + str(isSaved))
+                expenseDict = {'Date': expenseDate, 'Category': expenseCategory, 'Amount': expenseAmount, 'Description': expenseDesciption}
+                writer.writerow(expenseDict)
+                expense['isSaved'] = 1
+                #expensesList.append(expenseDict)
+                print("Is Saved in else before exit is " + str(expense['isSaved']))
+
     saveFile = False
 
 
 # This function saves the unsaved expenses and exits the tkinter window
 def exit():
-    print(str(saveFile))
-    if not saveFile:
-        print("Saving in exit()")
-        saveExpenses()
+    #global saveFile
+    #if saveFile is not None and True:
+    #print("Saving in exit()")
+    print("In Exit before save")
+    saveExpenses()
+    print("In Exit after save")
     root.destroy()
 
 # This function creates a menu with 5 options
